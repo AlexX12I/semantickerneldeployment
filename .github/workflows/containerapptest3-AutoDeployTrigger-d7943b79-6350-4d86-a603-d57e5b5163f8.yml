@@ -35,15 +35,8 @@ jobs:
         uses: azure/container-apps-deploy-action@v2
         with:
           appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
-          registryUrl: 
-          registryUsername: ${{ secrets.CONTAINERAPPTEST3_REGISTRY_USERNAME }}
-          registryPassword: ${{ secrets.CONTAINERAPPTEST3_REGISTRY_PASSWORD }}
           containerAppName: containerapptest3
           resourceGroup: POC_OU_SK_TEST
-          imageToBuild: default/[parameters('containerAppName')]:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
+
 
 
