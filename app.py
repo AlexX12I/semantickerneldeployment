@@ -10,7 +10,7 @@ model = "gpt-4o-mini"  # o "gpt-4o", "gpt-3.5-turbo", etc.
 api_key = os.environ.get("OPENAI_API_KEY")
 
 kernel = sk.Kernel()
-kernel.add_service(OpenAIChatCompletion(model_id=model, api_key=api_key))
+kernel.add_service(OpenAIChatCompletion(service_id="openai", ai_model_id=model, api_key=api_key))
 
 @app.route("/")
 def home():
@@ -36,3 +36,4 @@ def ask():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
+
