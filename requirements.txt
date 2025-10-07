@@ -1,4 +1,2 @@
-semantic-kernel
 fastapi
 uvicorn
-gunicorn
