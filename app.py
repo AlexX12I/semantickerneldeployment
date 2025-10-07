@@ -1,23 +1,21 @@
-from flask import Flask, request, jsonify
-import semantic_kernel as sk
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 import os
 
-app = Flask(__name__)
+app = FastAPI(title="Semantic Kernel API")
 
-# Configurar el Kernel
-kernel = sk.Kernel()
-kernel.add_text_completion_service(
-    "openai-gpt4",
-    OpenAIChatCompletion("gpt-4", api_key=os.getenv("6mxPxkUXYkwZ1AMb7OqjP1zFX0BvATv3rB5FT6VJG3IgIGygsTb0JQQJ99BJAC5RqLJXJ3w3AAABACOGQq76"))
-)
+@app.get("/")
+async def root():
+    return {"status": "ok", "message": "Semantic Kernel API running"}
 
-@app.route("/ask", methods=["POST"])
-def ask():
-    data = request.get_json()
-    prompt = data.get("prompt", "")
-    completion = kernel.services.get("openai-gpt4").complete(prompt)
-    return jsonify({"response": completion})
+@app.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    user_input = data.get("input", "")
+    # Aquí luego se integrará Semantic Kernel. Por ahora devolvemos algo simple.
+    return JSONResponse({"response": f"recibido: {user_input}"})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
