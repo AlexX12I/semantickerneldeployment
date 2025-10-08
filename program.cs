@@ -1,38 +1,46 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.ChatCompletion;
 
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-// Variables de entorno
-var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-var deploymentName = "gpt-4o-mini"; // ⚠️ pon aquí el nombre EXACTO de tu deployment en Azure AI Foundry
-var endpoint = "https://aleja-mghyt28b-eastus2.openai.azure.com/"; // o el endpoint de tu proyecto si usas AI Foundry
+// Forzar puerto 80
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(80);
+});
 
-// Configurar Semantic Kernel
+// Configuración de Semantic Kernel
+var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+var deploymentName = "gpt-4o-mini";
+var endpoint = "https://aleja-mghyt28b-eastus2.openai.azure.com/";
+
 var kernel = Kernel.CreateBuilder()
-    .AddAzureOpenAIChatCompletion(deploymentName, endpoint, apiKey)
+    .AddAzureOpenAIChatCompletion(deploymentName: deploymentName, endpoint: endpoint, apiKey: apiKey)
     .Build();
 
 var chat = kernel.GetRequiredService<IChatCompletionService>();
 
-// Endpoint POST /chat
-app.MapPost("/chat", async (ChatRequest req) =>
+app.MapPost("/chat", async (HttpRequest request) =>
 {
+    var data = await request.ReadFromJsonAsync<ChatRequest>();
+    if (data == null || string.IsNullOrWhiteSpace(data.Message))
+        return Results.BadRequest(new { error = "Campo 'message' requerido" });
+
     var history = new ChatHistory();
-    history.AddSystemMessage("Eres un asistente útil y conciso.");
-    history.AddUserMessage(req.Message);
+    history.AddUserMessage(data.Message);
 
-    string response = "";
+    string responseText = "";
     await foreach (var chunk in chat.GetStreamingChatMessageContentsAsync(history))
-        response += chunk.Content;
+    {
+        responseText += chunk.Content;
+    }
 
-    return Results.Ok(new { reply = response });
+    return Results.Ok(new { reply = responseText });
 });
 
-app.Urls.Add("http://0.0.0.0:80");
 app.Run();
 
-// Modelo de datos
 record ChatRequest(string Message);
