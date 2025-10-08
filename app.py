@@ -10,22 +10,21 @@ from semantic_kernel.contents.utils.author_role import AuthorRole
 app = Flask(__name__)
 
 # Configuración del modelo y la API key
-MODEL = "gpt-4o-mini"  # puedes usar gpt-4o, gpt-3.5-turbo, etc.
+MODEL = "gpt-4o-mini"  # Puedes usar gpt-4o o gpt-3.5-turbo
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# Crear kernel y añadir servicio OpenAI
+# Crear el kernel y registrar el servicio OpenAI
 kernel = Kernel()
-chat_service = OpenAIChatCompletion(service_id="chat_completion", ai_model_id=MODEL, api_key=OPENAI_API_KEY)
+chat_service = OpenAIChatCompletion(ai_model_id=MODEL, api_key=OPENAI_API_KEY)
 kernel.add_service(chat_service)
 
-# Crear el agente basado en ChatCompletion
+# Crear el agente (sin service_id)
 agent = ChatCompletionAgent(
-    service_id="chat_completion",
     name="AzureAgent",
     kernel=kernel,
     instructions="""
-        You are a helpful AI assistant that gives short, clear answers in Spanish.
-        If someone greets you, greet back warmly.
+        Eres un asistente útil y conversacional que responde en español con explicaciones claras y breves.
+        Si el usuario te saluda, responde con amabilidad.
     """
 )
 
@@ -34,7 +33,7 @@ history = ChatHistory()
 
 @app.route("/")
 def home():
-    return "¡Agente de Semantic Kernel desplegado en Azure Container Apps!"
+    return "✅ Agente de Semantic Kernel desplegado correctamente en Azure Container Apps."
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -49,13 +48,13 @@ def ask():
             # Añadir mensaje del usuario al historial
             history.add_message(ChatMessageContent(role=AuthorRole.USER, content=user_message))
 
-            # Invocar el agente (genera respuesta del modelo)
+            # Invocar el agente
             async for response in agent.invoke(history):
                 history.add_message(response)
                 return str(response.content)
 
-        response_text = asyncio.run(run_agent())
-        return jsonify({"response": response_text})
+        result = asyncio.run(run_agent())
+        return jsonify({"response": result})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
