@@ -31,6 +31,7 @@ app.MapPost("/chat", async (ChatRequest req) =>
     return Results.Ok(new { reply = response });
 });
 
+app.Urls.Add("http://0.0.0.0:80");
 app.Run();
 
 // Modelo de datos
