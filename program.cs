@@ -42,6 +42,7 @@ app.MapPost("/chat", async (HttpRequest request, Kernel kernel, IChatCompletionS
     return Results.Ok(new { reply = responseText });
 });
 
+app.Urls.Add("http://0.0.0.0:80");
 app.Run();
 
 record ChatRequest(string Message);
