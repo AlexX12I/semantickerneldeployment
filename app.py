@@ -11,8 +11,8 @@ app = Flask(__name__)
 
 # Configuración de Azure OpenAI
 DEPLOYMENT_NAME = "gpt-4o-mini"  # nombre del deployment en Azure
-AZURE_ENDPOINT = "https://aleja-mghyt28b-eastus2.openai.azure.com/"  # tu endpoint real https://aleja-mghyt28b-eastus2.services.ai.azure.com/ https://openaisktest.services.ai.azure.com/
-AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")  # la variable de entorno en Azure
+AZURE_ENDPOINT = "https://aleja-mghyt28b-eastus2.openai.azure.com/"
+AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 # Kernel y servicio de Azure OpenAI
 kernel = Kernel()
@@ -50,26 +50,24 @@ def ask():
             return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
         async def run_agent():
-            # Añadir mensaje del usuario al historial
+            # Añadir mensaje del usuario al historial con rol USER
             history.add_message(ChatMessageContent(role=AuthorRole.USER, content=user_message))
 
-            # Invocar el agente
+            response_text = ""
+            # Invocar el agente y recorrer la respuesta en streaming
             async for response in agent.invoke(history):
-                history.add_message(response)
-                return str(response.content)
+                # Agregar la respuesta al historial con rol ASSISTANT
+                history.add_message(ChatMessageContent(role=AuthorRole.ASSISTANT, content=response.content))
+                response_text += response.content
 
+            return response_text
+
+        # Ejecutar la corutina
         result = asyncio.run(run_agent())
         return jsonify({"response": result})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
-
-
-
-
-
-
