@@ -5,7 +5,7 @@ from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.agents import ChatCompletionAgent
 from semantic_kernel.contents import ChatHistory, ChatMessageContent
-from semantic_kernel.contents.utils.author_role import AuthorRole  # <-- para roles
+from semantic_kernel.contents.utils.author_role import AuthorRole
 
 app = Flask(__name__)
 
@@ -44,16 +44,17 @@ def home():
 def ask():
     data = request.get_json()
     user_message = data.get("prompt")
+
     if not user_message:
         return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
     async def run_agent():
-        # Usar ChatMessageContent con role correcto
+        # Añadir mensaje del usuario al historial
         history.add_message(ChatMessageContent(role=AuthorRole.USER, content=user_message))
 
-        # Invocar el agente
-        async for response in agent.invoke(history):
-            # Guardar respuesta con rol de asistente
+        # Invocar el agente pasando solo el string
+        async for response in agent.invoke(user_message):
+            # Guardar respuesta en el historial
             history.add_message(ChatMessageContent(role=AuthorRole.ASSISTANT, content=response.content))
             return response.content
 
