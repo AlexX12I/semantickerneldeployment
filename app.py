@@ -8,7 +8,7 @@ from semantic_kernel.agents import ChatCompletionAgent
 app = Flask(__name__)
 
 # Configuración de Azure OpenAI
-DEPLOYMENT_NAME = "gpt-4o-mini"  # nombre del deployment en Azure
+DEPLOYMENT_NAME = "gpt-4o-mini"
 AZURE_ENDPOINT = "https://aleja-mghyt28b-eastus2.openai.azure.com/"
 AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")
 
@@ -19,12 +19,12 @@ chat_service = AzureChatCompletion(
     endpoint=AZURE_ENDPOINT,
     api_key=AZURE_API_KEY
 )
+kernel.add_service(chat_service)  # agregamos el servicio al kernel
 
-# Agente: ahora se pasa directamente el servicio
+# Agente
 agent = ChatCompletionAgent(
     name="AzureAgent",
     kernel=kernel,
-    ai_service=chat_service,
     instructions="""
         Eres un asistente útil y conversacional que responde en español con explicaciones claras y breves.
         Si el usuario te saluda, responde con amabilidad.
@@ -45,9 +45,9 @@ def ask():
             return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
         async def run_agent():
-            # Llamada al agente: pasamos directamente el string
+            # Invocar el agente pasando el string
             response = await agent.invoke_async(user_message)
-            return response.content  # response.content ya es string
+            return response.content
 
         result = asyncio.run(run_agent())
         return jsonify({"response": result})
