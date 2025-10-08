@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 
 # Configuración de OpenAI
-model = "gpt-4o-mini"  # o "gpt-4o", "gpt-3.5-turbo", etc.
+model = "gpt-4o-mini"
 api_key = os.environ.get("OPENAI_API_KEY")
 
 kernel = sk.Kernel()
@@ -25,15 +25,14 @@ def ask():
         if not prompt:
             return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
-        # Crear una función semántica ad hoc
-        func = kernel.create_semantic_function(prompt)
-        answer = kernel.run_sync(func)
+        # Obtener el servicio OpenAI y ejecutar el prompt
+        chat_service = kernel.services.get_service("openai")
+        response = chat_service.complete(prompt=prompt)
 
-        return jsonify({"response": str(answer)})
+        return jsonify({"response": response})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
-
