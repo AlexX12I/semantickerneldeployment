@@ -1,34 +1,37 @@
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.OpenAI;
 using Microsoft.SemanticKernel.ChatCompletion;
 
-var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-var deploymentName = "gpt-4o-mini";
-var endpoint = "https://aleja-mghyt28b-eastus2.openai.azure.com/";
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
 
+// Variables de entorno
+var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+var deploymentName = "gpt-4o-mini"; // ⚠️ pon aquí el nombre EXACTO de tu deployment en Azure AI Foundry
+var endpoint = "https://aleja-mghyt28b-eastus2.openai.azure.com/"; // o el endpoint de tu proyecto si usas AI Foundry
+
+// Configurar Semantic Kernel
 var kernel = Kernel.CreateBuilder()
-    .AddAzureOpenAIChatCompletion(
-        deploymentName: deploymentName,
-        endpoint: endpoint,
-        apiKey: apiKey
-    )
+    .AddAzureOpenAIChatCompletion(deploymentName, endpoint, apiKey)
     .Build();
 
 var chat = kernel.GetRequiredService<IChatCompletionService>();
-const string systemPrompt = "Eres un asistente útil y conciso.";
 
-Console.WriteLine("Ask me anything (Enter para salir)");
-
-while (true)
+// Endpoint POST /chat
+app.MapPost("/chat", async (ChatRequest req) =>
 {
-    string? user = Console.ReadLine();
-    if (string.IsNullOrWhiteSpace(user)) break;
-
     var history = new ChatHistory();
-    history.AddSystemMessage(systemPrompt);
-    history.AddUserMessage(user);
+    history.AddSystemMessage("Eres un asistente útil y conciso.");
+    history.AddUserMessage(req.Message);
 
+    string response = "";
     await foreach (var chunk in chat.GetStreamingChatMessageContentsAsync(history))
-        Console.Write(chunk.Content);
+        response += chunk.Content;
 
-    Console.WriteLine();
-}
+    return Results.Ok(new { reply = response });
+});
+
+app.Run();
+
+// Modelo de datos
+record ChatRequest(string Message);
