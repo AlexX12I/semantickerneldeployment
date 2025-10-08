@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # Configuración de Azure OpenAI
 DEPLOYMENT_NAME = "gpt-4o-mini"  # nombre del deployment en Azure
-AZURE_ENDPOINT = "https://aleja-mghyt28b-eastus2.services.ai.azure.com/"  # tu endpoint real https://aleja-mghyt28b-eastus2.services.ai.azure.com/ https://openaisktest.services.ai.azure.com/
+AZURE_ENDPOINT = "https://openaisemk.openai.azure.com/"  # tu endpoint real https://aleja-mghyt28b-eastus2.services.ai.azure.com/ https://openaisktest.services.ai.azure.com/
 AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")  # la variable de entorno en Azure
 
 # Kernel y servicio de Azure OpenAI
@@ -67,6 +67,7 @@ def ask():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
+
 
 
 
