@@ -2,23 +2,28 @@ from flask import Flask, request, jsonify
 import os
 import asyncio
 from semantic_kernel import Kernel
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.agents import ChatCompletionAgent
 from semantic_kernel.contents import ChatHistory, ChatMessageContent
 from semantic_kernel.contents.utils.author_role import AuthorRole
 
 app = Flask(__name__)
 
-# Configuración del modelo y la API key
-MODEL = "gpt-4o-mini"  # Puedes usar gpt-4o o gpt-3.5-turbo
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+# Configuración de Azure OpenAI
+DEPLOYMENT_NAME = "gpt-4o-mini"  # nombre del deployment en Azure
+AZURE_ENDPOINT = "https://openaisktest.openai.azure.com/"  # tu endpoint real
+AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")  # la variable de entorno en Azure
 
-# Crear el kernel y registrar el servicio OpenAI
+# Kernel y servicio de Azure OpenAI
 kernel = Kernel()
-chat_service = OpenAIChatCompletion(ai_model_id=MODEL, api_key=OPENAI_API_KEY)
+chat_service = AzureChatCompletion(
+    deployment_name=DEPLOYMENT_NAME,
+    endpoint=AZURE_ENDPOINT,
+    api_key=AZURE_API_KEY
+)
 kernel.add_service(chat_service)
 
-# Crear el agente (sin service_id)
+# Agente
 agent = ChatCompletionAgent(
     name="AzureAgent",
     kernel=kernel,
@@ -33,7 +38,7 @@ history = ChatHistory()
 
 @app.route("/")
 def home():
-    return "✅ Agente de Semantic Kernel desplegado correctamente en Azure Container Apps."
+    return "✅ Agente Azure OpenAI desplegado correctamente"
 
 @app.route("/ask", methods=["POST"])
 def ask():
