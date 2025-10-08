@@ -9,8 +9,10 @@ app = Flask(__name__)
 model = "gpt-4o-mini"
 api_key = os.environ.get("OPENAI_API_KEY")
 
+# Crear el kernel y registrar el servicio de OpenAI
 kernel = sk.Kernel()
-kernel.add_service(OpenAIChatCompletion(service_id="openai", ai_model_id=model, api_key=api_key))
+openai_service = OpenAIChatCompletion(service_id="openai", ai_model_id=model, api_key=api_key)
+kernel.add_service(openai_service)
 
 @app.route("/")
 def home():
@@ -25,11 +27,16 @@ def ask():
         if not prompt:
             return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
-        # Obtener el servicio OpenAI y ejecutar el prompt
-        chat_service = kernel.services.get_service("openai")
-        response = chat_service.complete(prompt=prompt)
+        # Accedemos al servicio directamente desde el diccionario de servicios
+        chat_service = kernel.services["openai"]
 
-        return jsonify({"response": response})
+        # Ejecutar la llamada al modelo
+        result = chat_service.complete(prompt=prompt)
+
+        # El resultado es un objeto o string dependiendo de la versión
+        response_text = str(result) if not isinstance(result, str) else result
+
+        return jsonify({"response": response_text})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
