@@ -1,29 +1,30 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.ChatCompletion;
 
 var builder = WebApplication.CreateBuilder(args);
-var app = builder.Build();
 
-// Forzar puerto 80
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ListenAnyIP(80);
-});
-
-// Configuración de Semantic Kernel
+// Configuración de Semantic Kernel antes de Build()
 var apiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 var deploymentName = "gpt-4o-mini";
 var endpoint = "https://aleja-mghyt28b-eastus2.openai.azure.com/";
 
-var kernel = Kernel.CreateBuilder()
-    .AddAzureOpenAIChatCompletion(deploymentName: deploymentName, endpoint: endpoint, apiKey: apiKey)
-    .Build();
+builder.Services.AddSingleton<Kernel>(sp =>
+{
+    return Kernel.CreateBuilder()
+        .AddAzureOpenAIChatCompletion(deploymentName: deploymentName, endpoint: endpoint, apiKey: apiKey)
+        .Build();
+});
 
-var chat = kernel.GetRequiredService<IChatCompletionService>();
+builder.Services.AddSingleton(sp =>
+    sp.GetRequiredService<Kernel>().GetRequiredService<IChatCompletionService>()
+);
 
-app.MapPost("/chat", async (HttpRequest request) =>
+var app = builder.Build();
+
+app.MapPost("/chat", async (HttpRequest request, Kernel kernel, IChatCompletionService chat) =>
 {
     var data = await request.ReadFromJsonAsync<ChatRequest>();
     if (data == null || string.IsNullOrWhiteSpace(data.Message))
