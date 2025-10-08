@@ -1,47 +1,61 @@
 from flask import Flask, request, jsonify
-import semantic_kernel as sk
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 import os
 import asyncio
+from semantic_kernel import Kernel
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from semantic_kernel.agents import ChatCompletionAgent
+from semantic_kernel.contents import ChatHistory, ChatMessageContent
+from semantic_kernel.contents.utils.author_role import AuthorRole
 
 app = Flask(__name__)
 
-# Configuración de OpenAI
-model = "gpt-4o-mini"   # Puedes usar gpt-4o, gpt-3.5-turbo, etc.
-api_key = os.environ.get("OPENAI_API_KEY")
+# Configuración del modelo y la API key
+MODEL = "gpt-4o-mini"  # puedes usar gpt-4o, gpt-3.5-turbo, etc.
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# Crear kernel y añadir el servicio de OpenAI
-kernel = sk.Kernel()
-chat_service = OpenAIChatCompletion(ai_model_id=model, api_key=api_key)
+# Crear kernel y añadir servicio OpenAI
+kernel = Kernel()
+chat_service = OpenAIChatCompletion(service_id="chat_completion", ai_model_id=MODEL, api_key=OPENAI_API_KEY)
 kernel.add_service(chat_service)
+
+# Crear el agente basado en ChatCompletion
+agent = ChatCompletionAgent(
+    service_id="chat_completion",
+    name="AzureAgent",
+    kernel=kernel,
+    instructions="""
+        You are a helpful AI assistant that gives short, clear answers in Spanish.
+        If someone greets you, greet back warmly.
+    """
+)
+
+# Historial de conversación
+history = ChatHistory()
 
 @app.route("/")
 def home():
-    return "¡Hola desde Azure Container Apps con Semantic Kernel y OpenAI!"
+    return "¡Agente de Semantic Kernel desplegado en Azure Container Apps!"
 
 @app.route("/ask", methods=["POST"])
 def ask():
     try:
         data = request.get_json()
-        prompt = data.get("prompt")
+        user_message = data.get("prompt")
 
-        if not prompt:
+        if not user_message:
             return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
-        async def chat_response():
-            # Creamos una sesión de chat (ChatHistory)
-            chat = kernel.create_new_chat()
-            chat.add_user_message(prompt)
+        async def run_agent():
+            # Añadir mensaje del usuario al historial
+            history.add_message(ChatMessageContent(role=AuthorRole.USER, content=user_message))
 
-            # Ejecutamos el chat con el servicio configurado
-            response = await kernel.services.get("chat_completion").complete_chat(chat)
+            # Invocar el agente (genera respuesta del modelo)
+            async for response in agent.invoke(history):
+                history.add_message(response)
+                return str(response.content)
 
-            # `response` es un ChatMessageContent, el texto está en .content
-            return response.content
-
-        result = asyncio.run(chat_response())
-
-        return jsonify({"response": result})
+        response_text = asyncio.run(run_agent())
+        return jsonify({"response": response_text})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
