@@ -4,6 +4,8 @@ import asyncio
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.agents import ChatCompletionAgent
+from semantic_kernel.contents import ChatHistory, ChatMessageContent
+from semantic_kernel.contents.utils.author_role import AuthorRole  # <-- para roles
 
 app = Flask(__name__)
 
@@ -19,7 +21,7 @@ chat_service = AzureChatCompletion(
     endpoint=AZURE_ENDPOINT,
     api_key=AZURE_API_KEY
 )
-kernel.add_service(chat_service)  # agregamos el servicio al kernel
+kernel.add_service(chat_service)
 
 # Agente
 agent = ChatCompletionAgent(
@@ -31,27 +33,33 @@ agent = ChatCompletionAgent(
     """
 )
 
+# Historial de conversación
+history = ChatHistory()
+
 @app.route("/")
 def home():
     return "✅ Agente Azure OpenAI desplegado correctamente"
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    try:
-        data = request.get_json()
-        user_message = data.get("prompt")
+    data = request.get_json()
+    user_message = data.get("prompt")
+    if not user_message:
+        return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
-        if not user_message:
-            return jsonify({"error": "Falta el campo 'prompt'"}), 400
+    async def run_agent():
+        # Usar ChatMessageContent con role correcto
+        history.add_message(ChatMessageContent(role=AuthorRole.USER, content=user_message))
 
-        async def run_agent():
-            # Invocar el agente pasando el string
-            response = await agent.invoke_async(user_message)
+        # Invocar el agente
+        async for response in agent.invoke(history):
+            # Guardar respuesta con rol de asistente
+            history.add_message(ChatMessageContent(role=AuthorRole.ASSISTANT, content=response.content))
             return response.content
 
+    try:
         result = asyncio.run(run_agent())
         return jsonify({"response": result})
-
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
