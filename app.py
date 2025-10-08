@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 import semantic_kernel as sk
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 import os
+import asyncio
 
 app = Flask(__name__)
 
@@ -27,14 +28,18 @@ def ask():
         if not prompt:
             return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
-        # Accedemos al servicio directamente desde el diccionario de servicios
+        # Obtenemos el servicio de chat
         chat_service = kernel.services["openai"]
 
-        # Ejecutar la llamada al modelo
-        result = chat_service.complete(prompt=prompt)
+        # Usamos invoke() para generar la respuesta
+        # invoke() es asíncrono, así que usamos asyncio.run() para ejecutarlo
+        async def run_chat():
+            return await chat_service.invoke(prompt)
 
-        # El resultado es un objeto o string dependiendo de la versión
-        response_text = str(result) if not isinstance(result, str) else result
+        result = asyncio.run(run_chat())
+
+        # El resultado tiene normalmente un atributo .content (dependiendo de la versión)
+        response_text = getattr(result, "content", str(result))
 
         return jsonify({"response": response_text})
 
