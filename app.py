@@ -10,7 +10,7 @@ from semantic_kernel.contents.utils.author_role import AuthorRole
 app = Flask(__name__)
 
 # Configuración de Azure OpenAI
-DEPLOYMENT_NAME = "gpt-mini"  # nombre del deployment en Azure
+DEPLOYMENT_NAME = "gpt4-mini"  # nombre del deployment en Azure
 AZURE_ENDPOINT = "https://openaisktest.openai.azure.com/"  # tu endpoint real
 AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")  # la variable de entorno en Azure
 
@@ -67,4 +67,5 @@ def ask():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
+
 
