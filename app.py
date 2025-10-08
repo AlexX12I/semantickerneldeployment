@@ -7,13 +7,13 @@ import asyncio
 app = Flask(__name__)
 
 # Configuración de OpenAI
-model = "gpt-4o-mini"
+model = "gpt-4o-mini"   # Puedes usar gpt-4o, gpt-3.5-turbo, etc.
 api_key = os.environ.get("OPENAI_API_KEY")
 
-# Crear el kernel y registrar el servicio de OpenAI
+# Crear kernel y añadir el servicio de OpenAI
 kernel = sk.Kernel()
-openai_service = OpenAIChatCompletion(service_id="openai", ai_model_id=model, api_key=api_key)
-kernel.add_service(openai_service)
+chat_service = OpenAIChatCompletion(ai_model_id=model, api_key=api_key)
+kernel.add_service(chat_service)
 
 @app.route("/")
 def home():
@@ -23,28 +23,29 @@ def home():
 def ask():
     try:
         data = request.get_json()
-        prompt = data.get("prompt", "")
+        prompt = data.get("prompt")
 
         if not prompt:
             return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
-        # Obtenemos el servicio de chat
-        chat_service = kernel.services["openai"]
+        async def chat_response():
+            # Creamos una sesión de chat (ChatHistory)
+            chat = kernel.create_new_chat()
+            chat.add_user_message(prompt)
 
-        # Usamos invoke() para generar la respuesta
-        # invoke() es asíncrono, así que usamos asyncio.run() para ejecutarlo
-        async def run_chat():
-            return await chat_service.invoke(prompt)
+            # Ejecutamos el chat con el servicio configurado
+            response = await kernel.services.get("chat_completion").complete_chat(chat)
 
-        result = asyncio.run(run_chat())
+            # `response` es un ChatMessageContent, el texto está en .content
+            return response.content
 
-        # El resultado tiene normalmente un atributo .content (dependiendo de la versión)
-        response_text = getattr(result, "content", str(result))
+        result = asyncio.run(chat_response())
 
-        return jsonify({"response": response_text})
+        return jsonify({"response": result})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
