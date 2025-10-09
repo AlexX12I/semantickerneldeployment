@@ -49,12 +49,19 @@ def ask():
     async def run_agent():
         history.add_message(ChatMessageContent(role=AuthorRole.USER, content=user_message))
 
-        async for response in agent.invoke(history):
-            history.add_message(ChatMessageContent(role=AuthorRole.ASSISTANT, content=response.content))
-            return str(response.content)
+        async for response in agent.invoke(messages):
+            # Algunos builds devuelven ChatMessageContent, otros TextContent
+            if hasattr(response, "content") and isinstance(response.content, str):
+                return response.content
+            elif hasattr(response, "items") and len(response.items) > 0:
+                return response.items[0].text  # Para modelos que devuelven items
+            else:
+                return str(response)
+
 
     try:
         result = asyncio.run(run_agent())
         return jsonify({"response": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
