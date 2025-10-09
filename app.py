@@ -55,4 +55,7 @@ def ask():
 
     try:
         result = asyncio.run(run_agent())
-        retu
+        return jsonify({"response": result})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
