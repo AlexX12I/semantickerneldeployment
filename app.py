@@ -4,6 +4,7 @@ import asyncio
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.agents import ChatCompletionAgent
+from semantic_kernel.contents import ChatHistory, ChatMessage
 
 app = Flask(__name__)
 
@@ -12,24 +13,27 @@ DEPLOYMENT_NAME = "gpt-4o-mini"
 AZURE_ENDPOINT = "https://aleja-mghyt28b-eastus2.openai.azure.com/"
 AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# Kernel y servicio de Azure OpenAI
+# Crear el Kernel y agregar el servicio
 kernel = Kernel()
 chat_service = AzureChatCompletion(
     deployment_name=DEPLOYMENT_NAME,
     endpoint=AZURE_ENDPOINT,
     api_key=AZURE_API_KEY
 )
+kernel.add_service(chat_service)
 
-# Agente
+# Crear el agente
 agent = ChatCompletionAgent(
     name="AzureAgent",
     kernel=kernel,
-    ai_service=chat_service,
     instructions="""
         Eres un asistente útil y conversacional que responde en español con explicaciones claras y breves.
         Si el usuario te saluda, responde con amabilidad.
     """
 )
+
+# Historial de conversación
+history = ChatHistory()
 
 @app.route("/")
 def home():
@@ -37,22 +41,18 @@ def home():
 
 @app.route("/ask", methods=["POST"])
 def ask():
+    data = request.get_json()
+    user_message = data.get("prompt")
+    if not user_message:
+        return jsonify({"error": "Falta el campo 'prompt'"}), 400
+
+    async def run_agent():
+        history.add_message(ChatMessage(author="user", content=user_message))
+
+        async for response in agent.invoke(history):
+            history.add_message(ChatMessage(author="assistant", content=response.content))
+            return str(response.content)
+
     try:
-        data = request.get_json()
-        user_message = data.get("prompt")
-        if not user_message:
-            return jsonify({"error": "Falta el campo 'prompt'"}), 400
-
-        async def run_agent():
-            # Pasamos el string directamente al agente
-            response = await agent.invoke_async(user_message)
-            return response.content  # ya es string
-
         result = asyncio.run(run_agent())
-        return jsonify({"response": result})
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+        retu
