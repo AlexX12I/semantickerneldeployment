@@ -4,7 +4,7 @@ import asyncio
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.agents import ChatCompletionAgent
-from semantic_kernel.contents import ChatHistory, ChatMessageContent, AuthorRole
+from semantic_kernel.contents import ChatMessageContent, AuthorRole
 
 app = Flask(__name__)
 
@@ -13,7 +13,7 @@ DEPLOYMENT_NAME = "gpt-4o-mini"
 AZURE_ENDPOINT = "https://aleja-mghyt28b-eastus2.openai.azure.com/"
 AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")
 
-# Crear el Kernel y agregar el servicio
+# Inicializar kernel y servicio
 kernel = Kernel()
 chat_service = AzureChatCompletion(
     deployment_name=DEPLOYMENT_NAME,
@@ -32,9 +32,6 @@ agent = ChatCompletionAgent(
     """
 )
 
-# Historial de conversación
-history = ChatHistory()
-
 @app.route("/")
 def home():
     return "✅ Agente Azure OpenAI desplegado correctamente"
@@ -43,21 +40,24 @@ def home():
 def ask():
     data = request.get_json()
     user_message = data.get("prompt")
+
     if not user_message:
         return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
     async def run_agent():
-        history.add_message(ChatMessageContent(role=AuthorRole.USER, content=user_message))
+        # Aquí definimos correctamente el mensaje del usuario
+        messages = [
+            ChatMessageContent(role=AuthorRole.USER, content=user_message)
+        ]
 
+        # Ejecutar el agente con los mensajes
         async for response in agent.invoke(messages):
-            # Algunos builds devuelven ChatMessageContent, otros TextContent
             if hasattr(response, "content") and isinstance(response.content, str):
                 return response.content
             elif hasattr(response, "items") and len(response.items) > 0:
-                return response.items[0].text  # Para modelos que devuelven items
+                return response.items[0].text
             else:
                 return str(response)
-
 
     try:
         result = asyncio.run(run_agent())
@@ -65,3 +65,6 @@ def ask():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=80)
