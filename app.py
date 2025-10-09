@@ -45,13 +45,12 @@ def ask():
         return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
     async def run_agent():
-        # Aquí definimos correctamente el mensaje del usuario
-        messages = [
-            ChatMessageContent(role=AuthorRole.USER, content=user_message)
-        ]
+        # Crear mensaje del usuario sin historial
+        messages = [ChatMessageContent(role=AuthorRole.USER, content=user_message)]
 
-        # Ejecutar el agente con los mensajes
+        # Invocar el agente
         async for response in agent.invoke(messages):
+            # Devolver la respuesta del asistente
             if hasattr(response, "content") and isinstance(response.content, str):
                 return response.content
             elif hasattr(response, "items") and len(response.items) > 0:
@@ -64,7 +63,6 @@ def ask():
         return jsonify({"response": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
