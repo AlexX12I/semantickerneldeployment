@@ -4,7 +4,7 @@ import asyncio
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 from semantic_kernel.agents import ChatCompletionAgent
-from semantic_kernel.contents import ChatHistory, ChatMessage
+from semantic_kernel.contents import ChatHistory, ChatMessageContent, AuthorRole
 
 app = Flask(__name__)
 
@@ -47,10 +47,10 @@ def ask():
         return jsonify({"error": "Falta el campo 'prompt'"}), 400
 
     async def run_agent():
-        history.add_message(ChatMessage(author="user", content=user_message))
+        history.add_message(ChatMessageContent(role=AuthorRole.USER, content=user_message))
 
         async for response in agent.invoke(history):
-            history.add_message(ChatMessage(author="assistant", content=response.content))
+            history.add_message(ChatMessageContent(role=AuthorRole.ASSISTANT, content=response.content))
             return str(response.content)
 
     try:
@@ -58,4 +58,3 @@ def ask():
         return jsonify({"response": result})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
