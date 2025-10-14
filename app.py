@@ -9,7 +9,7 @@ from semantic_kernel.contents import ChatMessageContent, AuthorRole
 app = Flask(__name__)
 
 # Configuración de Azure OpenAI
-DEPLOYMENT_NAME = "gpt-4o-mini"
+DEPLOYMENT_NAME = "gpt-4o-mini-2"
 AZURE_ENDPOINT = "https://aleja-mghyt28b-eastus2.openai.azure.com/"
 AZURE_API_KEY = os.environ.get("OPENAI_API_KEY")
 
@@ -66,3 +66,4 @@ def ask():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
+
