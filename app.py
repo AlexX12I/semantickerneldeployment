@@ -34,7 +34,7 @@ agent = ChatCompletionAgent(
 
 @app.route("/")
 def home():
-    return "✅ Agente Azure OpenAI desplegado correctamente"
+    return "Agente Azure OpenAI desplegado correctamente"
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -66,6 +66,7 @@ def ask():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=80)
+
 
 
 
